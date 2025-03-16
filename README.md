@@ -6,14 +6,14 @@
 
 Для запуска проекта выполните следующие шаги:
 
-1. **Клонируйте репозиторий:**
+1. Клонируйте репозиторий:
 
-   ```bash
+```bash
    git clone https://github.com/nongrata2/musiclib.git
    cd musiclib
-   ```
-2. **Создайте файл .env ВНУТРИ папки musiclib со следующими параметрами:**
+```
 
+2. Создайте файл .env ВНУТРИ папки musiclib со следующими параметрами:
 ```
 HTTP_SERVER_ADDRESS=
 HTTP_SERVER_TIMEOUT=
@@ -35,12 +35,10 @@ DB_PASSWORD=postgres
 DB_NAME=postgres
 DB_PORT=5432
 ```
-3. **Запустите проект с помощью Docker Compose**:
-
+3. Запустите проект с помощью Docker Compose:
 ```bash
 docker compose up --build
 ```
-
 После запуска API будет доступен по адресу http://localhost:8081. Для тестирования можно использовать curl.
 
 ## Доступные эндпоинты
@@ -50,17 +48,18 @@ docker compose up --build
 #### URL: /songs
 
 #### Параметры:
-- **group_name** (опционально): Фильтр по названию группы.
-- **song_name** (опционально): Фильтр по названию песни.
-- **release_date** (опционально): Фильтр по дате выпуска.
-- **text** (опционально): Фильтр по тексту песни.
-- **link** (опционально): Фильтр по ссылке.
-- **page** (опционально): Номер страницы.
-- **limit** (опционально): Количество песен на странице.
+- group_name (опционально): Фильтр по названию группы.
+- song_name (опционально): Фильтр по названию песни.
+- release_date (опционально): Фильтр по дате выпуска.
+- text (опционально): Фильтр по тексту песни.
+- link (опционально): Фильтр по ссылке.
+- page (опционально): Номер страницы.
+- limit (опционально): Количество песен на странице.
 
 для применения пагинации должны быть указаны и page, и limit
 
 #### Пример:
+
 ```bash
 curl -X GET "http://localhost:8081/songs"
 ```
@@ -72,9 +71,7 @@ curl -X GET "http://localhost:8081/songs?group_name=Muse"
 ```
 
 #### Пример запроса с пагинацией: 
-```bash
 curl -X GET "http://localhost:8081/songs?page=1&limit=3"
-```
 
 ### 2. Добавить новую песню
 #### Метод: PUT
@@ -83,20 +80,18 @@ curl -X GET "http://localhost:8081/songs?page=1&limit=3"
 
 #### Тело запроса (JSON):
 
-```json
 {
-  "group_name": "Muse",
-  "song_name": "Supermassive Black Hole",
+  "song": "Supermassive Black Hole",
+  "group": "Muse"
 }
-```
 #### Пример:
 
 ```bash
 curl -X PUT "http://localhost:8081/songs" \
      -H "Content-Type: application/json" \
      -d '{
-           "group_name": "Muse",
-           "song_name": "Supermassive Black Hole",
+           "song":"Supermassive Black Hole",
+           "group":"Muse"
          }'
 ```
 
@@ -107,7 +102,6 @@ curl -X PUT "http://localhost:8081/songs" \
 
 #### Тело запроса (JSON):
 
-```json
 {
   "group_name": "New Group Name",
   "song_name": "New Song Name",
@@ -115,9 +109,9 @@ curl -X PUT "http://localhost:8081/songs" \
   "text": "New lyrics",
   "link": "https://new-link.com"
 }
-```
 
 ####  Пример:
+
 ```bash
 curl -X PUT "http://localhost:8081/songs/{songID}" \
      -H "Content-Type: application/json" \
@@ -129,6 +123,7 @@ curl -X PUT "http://localhost:8081/songs/{songID}" \
            "link": "https://new-link.com"
          }'
 ```
+
 где songID - id песни, которую нужно отредактировать
 ### 4. Удалить песню
 #### Метод: DELETE
@@ -140,6 +135,7 @@ curl -X PUT "http://localhost:8081/songs/{songID}" \
 ```bash
 curl -X DELETE "http://localhost:8081/songs/{songID}"
 ```
+
 где songID - id песни, которую нужно удалить
 
 ### 5. Получить текст песни
@@ -153,7 +149,9 @@ curl -X DELETE "http://localhost:8081/songs/{songID}"
 ```bash
 curl -X GET "http://localhost:8081/songs/{songID}"
 ```
+
 где songID - id песни, текст которой нужно получить
+
 ## Версии
 - Go 1.23.6 
 - PostgreSQL 13.20
