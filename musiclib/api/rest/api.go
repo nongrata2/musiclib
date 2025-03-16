@@ -137,14 +137,48 @@ func DeleteSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 func GetLyricsHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songID := r.PathValue("songID")
-		if songLyrics, err := db.GetLyrics(r.Context(), songID); err != nil {
-            log.Error("failed to get lyrics of the song", "error", err)
-            http.Error(w, "Failed to get lyrics of the song", http.StatusInternalServerError)
-            return
-        }else{
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(songLyrics))
+		pagestr := r.URL.Query().Get("page")
+		limitstr := r.URL.Query().Get("limit")
+
+		var page, limit int
+		var err error
+
+		if pagestr != "" {
+			page, err = strconv.Atoi(pagestr)
+			if err != nil || page < 1 {
+				log.Error("wrong page number", "error", err)
+				http.Error(w, "wrong page number", http.StatusInternalServerError)
+				return
+			}
+		}else{
+			page = 0
 		}
+
+		if limitstr != "" {
+			limit, err = strconv.Atoi(limitstr)
+			if err != nil || limit < 1 {
+				log.Error("wrong limit number", "error", err)
+				http.Error(w, "wrong limit number", http.StatusInternalServerError)
+				return
+			}
+		}else {
+			limit = 0
+		}
+
+		if limit == 0 && page != 0 || page == 0 && limit != 0 {
+			log.Warn("not using pagynation. both limit and page parameters should be filled")
+			limit, page = 0, 0
+		}
+
+		songLyrics, err := db.GetLyrics(r.Context(), songID, page, limit)
+		if err != nil {
+			log.Error("failed to get lyrics of the song", "error", err)
+			http.Error(w, "Failed to get lyrics of the song", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(songLyrics))
 	}
 }
 
