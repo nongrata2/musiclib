@@ -26,7 +26,7 @@ DB_PORT=
 ```
 Пример:
 ```
-HTTP_SERVER_ADDRESS=localhost:8081
+HTTP_SERVER_ADDRESS=:8080
 HTTP_SERVER_TIMEOUT=5s
 LOG_LEVEL=DEBUG
 DB_HOST=db
@@ -35,7 +35,16 @@ DB_PASSWORD=postgres
 DB_NAME=postgres
 DB_PORT=5432
 ```
-3. Запустите проект с помощью Docker Compose:
+3. Укажите путь до внешнего API
+
+В файле musiclib/api/main.go в переменной externalAPIURL необходимо указать URL до внешнего API для подгрузки параметров ReleaseDate, Text, Link. 
+На данный момент для удобства и тестирования реализована заглушка в файле mock/mock.go, которая на все запросы возвращает фиксированный ответ. В случае отсутствия внешнего API нужно также запустить этот файл:
+```bash
+go run mock.go
+```
+После этого он будет выступать в качестве внешнего API
+
+4. Запустите проект с помощью Docker Compose:
 ```bash
 docker compose up --build
 ```
@@ -158,6 +167,11 @@ curl -X DELETE "http://localhost:8081/songs/{songID}"
 curl -X GET "http://localhost:8081/songs/{songID}"
 ```
 
+#### Пример с пагинацией:
+
+```bash
+curl -X GET "http://localhost:8081/songs/{songID}?page=1&limit=3"
+```
 где songID - id песни, текст которой нужно получить
 
 ## Версии
