@@ -15,6 +15,8 @@ import (
 
 func AddSongHandler(log *slog.Logger, db *db.DB, apiBaseURL string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("adding song handler")
+		log.Info("start adding song")
         var request struct {
             Group string `json:"group"`
             Songname  string `json:"song"`
@@ -48,13 +50,16 @@ func AddSongHandler(log *slog.Logger, db *db.DB, apiBaseURL string) http.Handler
         }
 
         w.WriteHeader(http.StatusCreated)
-        w.Write([]byte("Song added successfully\n"))
+        w.Write([]byte("Song was added successfully\n"))
+		log.Info("end adding song")
     }
 }
 
 
 func GetLibDataHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("getting library data handler")
+		log.Info("start getting data from library")
 
         filters := map[string]string{
             "group_name":   r.URL.Query().Get("group_name"),
@@ -118,12 +123,15 @@ func GetLibDataHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	
 			w.Write(jsonData) 
 		}
+		log.Info("end getting data from library")
     }
 }
 
 
 func DeleteSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("deleting song handler")
+		log.Info("start deleting song")
 		songID := r.PathValue("songID")
 
 		if err := db.Delete(r.Context(), songID); err != nil {
@@ -133,14 +141,18 @@ func DeleteSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
         }
 
         w.WriteHeader(http.StatusOK)
-		outstr := fmt.Sprintf("song with id %v deleted successfully\n", songID)
+		outstr := fmt.Sprintf("song with id %v was deleted successfully\n", songID)
         w.Write([]byte(outstr))
+		log.Info("end deleting song")
 	}
 }
 
 
 func GetLyricsHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("getting lyrics handler")
+		log.Info("start getting lyrics")
+
 		songID := r.PathValue("songID")
 		pagestr := r.URL.Query().Get("page")
 		limitstr := r.URL.Query().Get("limit")
@@ -184,12 +196,16 @@ func GetLyricsHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(songLyrics))
+		log.Info("end getting lyrics")
 	}
 }
 
 
 func EditSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
+		log.Debug("editing song handler")
+		log.Info("start editing song")
+		
         songIDstr := r.PathValue("songID")
 
         songID, err := strconv.Atoi(songIDstr)
@@ -225,5 +241,6 @@ func EditSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
             return
         }
         w.Write(jsonData)
+		log.Info("end editing song")
     }
 }

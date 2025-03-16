@@ -51,6 +51,7 @@ func New(log *slog.Logger, address string) (*DB, error) {
 
 func (db *DB) Add(ctx context.Context, song core.Song) error {
 
+    db.Log.Debug("started adding song DB")
     query := `
         INSERT INTO songs (group_name, song_name, release_date, text, link)
         VALUES ($1, $2, $3, $4, $5)
@@ -67,11 +68,13 @@ func (db *DB) Add(ctx context.Context, song core.Song) error {
         db.Log.Error("failed to add song", "error", err)
         return err
     }
+    db.Log.Debug("ended adding song DB")
 
     return nil
 }
 
 func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, limit int) ([]core.Song, error) {
+    db.Log.Debug("started getting song list DB")
     var songs []core.Song
 
     query := `SELECT id, group_name, song_name, release_date, text, link FROM songs`
@@ -103,10 +106,13 @@ func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, lim
         return nil, err
     }
 
+    db.Log.Debug("ended getting song list DB")
     return songs, nil
 }
 
 func (db *DB) Delete(ctx context.Context, songID string) error {
+    db.Log.Debug("started deleting song DB")
+
     query := `DELETE FROM songs WHERE id = $1`
 
     result, err := db.Conn.ExecContext(ctx, query, songID)
@@ -126,48 +132,51 @@ func (db *DB) Delete(ctx context.Context, songID string) error {
 
         return errors.New("no song found with the given ID")
     }
-
+    db.Log.Debug("ended deleting song DB")
     return nil
 }
 
 func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (string, error) {
-	var songLyrics string
+    db.Log.Debug("started getting lyrics DB")
+    var songLyrics string
 
-	query := `SELECT text FROM songs WHERE id = $1`
-	err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			db.Log.Error("no song found with the given ID", "id", songID)
-			return "", errors.New("no song found with the given ID")
-		}
-		db.Log.Error("failed to get lyrics of the song", "error", err)
-		return "", err
-	}
+    query := `SELECT text FROM songs WHERE id = $1`
+    err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            db.Log.Error("no song found with the given ID", "id", songID)
+            return "", errors.New("no song found with the given ID")
+        }
+        db.Log.Error("failed to get lyrics of the song", "error", err)
+        return "", err
+    }
 
-	var result string
+    if limit == 0 || page == 0 {
+        db.Log.Debug("pagination not used, returning full lyrics")
+        return songLyrics, nil
+    }
 
-	if limit != 0 && page != 0{
-		verses := strings.Split(songLyrics, "\n\n")
+    verses := strings.Split(songLyrics, "\n\n")
 
-		start := (page - 1) * limit
-		end := start + limit
-	
-		if start >= len(verses) {
-			return "", errors.New("page out of range")
-		}
-		if end > len(verses) {
-			end = len(verses)
-		}
-	
-		paginatedVerses := verses[start:end]
-	
-		result = strings.Join(paginatedVerses, "\n\n")
-	}
+    start := (page - 1) * limit
+    end := start + limit
 
-	return result, nil
+    if start >= len(verses) {
+        return "", errors.New("page out of range")
+    }
+    if end > len(verses) {
+        end = len(verses)
+    }
+
+    paginatedVerses := verses[start:end]
+    result := strings.Join(paginatedVerses, "\n\n")
+
+    db.Log.Debug("ended getting lyrics DB")
+    return result, nil
 }
 
 func (db *DB) Update(ctx context.Context, id int, song core.Song) (*core.Song, error) {
+    db.Log.Debug("started updating song DB")
 
     var exists bool
     checkQuery := `SELECT EXISTS(SELECT 1 FROM songs WHERE id = $1)`
@@ -207,6 +216,7 @@ func (db *DB) Update(ctx context.Context, id int, song core.Song) (*core.Song, e
         db.Log.Error("failed to fetch updated song", "error", err)
         return nil, err
     }
+    db.Log.Debug("end updating song DB")
 
     return &updatedSong, nil
 }
