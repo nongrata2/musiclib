@@ -12,12 +12,12 @@ import (
 var migrationFiles embed.FS
 
 func (db *DB) Migrate() error {
-	db.log.Debug("running migration")
+	db.Log.Debug("running migration")
 	files, err := iofs.New(migrationFiles, "migrations") // get migrations from
 	if err != nil {
 		return err
 	}
-	driver, err := pgx.WithInstance(db.conn.DB, &pgx.Config{})
+	driver, err := pgx.WithInstance(db.Conn.DB, &pgx.Config{})
 	if err != nil {
 		return err
 	}
@@ -30,12 +30,12 @@ func (db *DB) Migrate() error {
 
 	if err != nil {
 		if err != migrate.ErrNoChange {
-			db.log.Error("migration failed", "error", err)
+			db.Log.Error("migration failed", "error", err)
 			return err
 		}
-		db.log.Debug("migration did not change anything")
+		db.Log.Debug("migration did not change anything")
 	}
 
-	db.log.Debug("migration finished")
+	db.Log.Debug("migration finished")
 	return nil
 }

@@ -52,6 +52,7 @@ func AddSongHandler(log *slog.Logger, db *db.DB, apiBaseURL string) http.Handler
     }
 }
 
+
 func GetLibDataHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
 
@@ -120,6 +121,7 @@ func GetLibDataHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
     }
 }
 
+
 func DeleteSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		songID := r.PathValue("songID")
@@ -135,6 +137,7 @@ func DeleteSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
         w.Write([]byte(outstr))
 	}
 }
+
 
 func GetLyricsHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -183,6 +186,7 @@ func GetLyricsHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
 		w.Write([]byte(songLyrics))
 	}
 }
+
 
 func EditSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {

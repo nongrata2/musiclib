@@ -6,16 +6,33 @@ import (
 	"log/slog"
 	"fmt"
 	"strings"
+    "os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"musiclib/api/core"
 	"database/sql"
+    "github.com/DATA-DOG/go-sqlmock"
 )
 
 type DB struct {
-	log  *slog.Logger
-	conn *sqlx.DB
+	Log  *slog.Logger
+	Conn *sqlx.DB
+}
+
+// mock for tests
+func NewMockDB() (*DB, sqlmock.Sqlmock, error) {
+	mockDB, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	db := sqlx.NewDb(mockDB, "sqlmock")
+
+	return &DB{
+		Log:  slog.New(slog.NewTextHandler(os.Stdout, nil)),
+		Conn: db,
+	}, mock, nil
 }
 
 func New(log *slog.Logger, address string) (*DB, error) {
@@ -27,11 +44,10 @@ func New(log *slog.Logger, address string) (*DB, error) {
 	}
 
 	return &DB{
-		log:  log,
-		conn: db,
+		Log:  log,
+		Conn: db,
 	}, nil
 }
-
 
 func (db *DB) Add(ctx context.Context, song core.Song) error {
 
@@ -40,7 +56,7 @@ func (db *DB) Add(ctx context.Context, song core.Song) error {
         VALUES ($1, $2, $3, $4, $5)
     `
 
-    _, err := db.conn.ExecContext(ctx, query,
+    _, err := db.Conn.ExecContext(ctx, query,
         song.Group,
         song.Songname,
         song.ReleaseDate,
@@ -48,7 +64,7 @@ func (db *DB) Add(ctx context.Context, song core.Song) error {
         song.Link,
     )
     if err != nil {
-        db.log.Error("failed to add song", "error", err)
+        db.Log.Error("failed to add song", "error", err)
         return err
     }
 
@@ -81,9 +97,9 @@ func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, lim
         query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
 
-    err := db.conn.SelectContext(ctx, &songs, query, args...)
+    err := db.Conn.SelectContext(ctx, &songs, query, args...)
     if err != nil {
-        db.log.Error("failed to fetch songs", "error", err)
+        db.Log.Error("failed to fetch songs", "error", err)
         return nil, err
     }
 
@@ -93,20 +109,20 @@ func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, lim
 func (db *DB) Delete(ctx context.Context, songID string) error {
     query := `DELETE FROM songs WHERE id = $1`
 
-    result, err := db.conn.ExecContext(ctx, query, songID)
+    result, err := db.Conn.ExecContext(ctx, query, songID)
     if err != nil {
-        db.log.Error("failed to delete song", "error", err)
+        db.Log.Error("failed to delete song", "error", err)
         return err
     }
 
     rowsAffected, err := result.RowsAffected()
     if err != nil {
-        db.log.Error("failed to get rows affected", "error", err)
+        db.Log.Error("failed to get rows affected", "error", err)
         return err
     }
 
     if rowsAffected == 0 {
-        db.log.Warn("no song found with the given id", "id", songID)
+        db.Log.Warn("no song found with the given id", "id", songID)
 
         return errors.New("no song found with the given ID")
     }
@@ -118,13 +134,13 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
 	var songLyrics string
 
 	query := `SELECT text FROM songs WHERE id = $1`
-	err := db.conn.GetContext(ctx, &songLyrics, query, songID)
+	err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			db.log.Error("no song found with the given ID", "id", songID)
+			db.Log.Error("no song found with the given ID", "id", songID)
 			return "", errors.New("no song found with the given ID")
 		}
-		db.log.Error("failed to get lyrics of the song", "error", err)
+		db.Log.Error("failed to get lyrics of the song", "error", err)
 		return "", err
 	}
 
@@ -155,14 +171,14 @@ func (db *DB) Update(ctx context.Context, id int, song core.Song) (*core.Song, e
 
     var exists bool
     checkQuery := `SELECT EXISTS(SELECT 1 FROM songs WHERE id = $1)`
-    err := db.conn.GetContext(ctx, &exists, checkQuery, id)
+    err := db.Conn.GetContext(ctx, &exists, checkQuery, id)
     if err != nil {
-        db.log.Error("failed to check if song exists", "error", err)
+        db.Log.Error("failed to check if song exists", "error", err)
         return nil, err
     }
 
     if !exists {
-        db.log.Error("no song found with the given ID", "id", id)
+        db.Log.Error("no song found with the given ID", "id", id)
         return nil, errors.New("no song found with the given ID")
     }
 
@@ -178,17 +194,17 @@ func (db *DB) Update(ctx context.Context, id int, song core.Song) (*core.Song, e
 
     song.ID = id
 
-    _, err = db.conn.NamedExecContext(ctx, query, song)
+    _, err = db.Conn.NamedExecContext(ctx, query, song)
     if err != nil {
-        db.log.Error("failed to update song", "error", err)
+        db.Log.Error("failed to update song", "error", err)
         return nil, err
     }
 
     var updatedSong core.Song
     getQuery := `SELECT * FROM songs WHERE id = $1`
-    err = db.conn.GetContext(ctx, &updatedSong, getQuery, id)
+    err = db.Conn.GetContext(ctx, &updatedSong, getQuery, id)
     if err != nil {
-        db.log.Error("failed to fetch updated song", "error", err)
+        db.Log.Error("failed to fetch updated song", "error", err)
         return nil, err
     }
 
