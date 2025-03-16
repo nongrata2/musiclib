@@ -13,19 +13,19 @@ services:
     volumes:
       - ./musiclib/.env:/.env
     environment:
-      - HTTP_SERVER_ADDRESS=:8080
-      - POSTGRES_HOST=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_NAME=musiclib
-      - POSTGRES_PORT=5432
+      - HTTP_SERVER_ADDRESS=${HTTP_SERVER_ADDRESS}
+      - POSTGRES_HOST=${DB_HOST}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_NAME=${DB_NAME}
+      - POSTGRES_PORT=${DB_PORT}
 
   db:
     image: postgres:13-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: musiclib
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
