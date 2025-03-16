@@ -5,24 +5,30 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	HttpServerAddress string        `yaml:"http_server_address" env:"HTTP_SERVER_ADDRESS" env-default:"localhost:8081"`
-	HttpServerTimeout time.Duration `yaml:"http_server_timeout" env:"HTTP_SERVER_TIMEOUT" env-default:"5s"`
-	LogLevel          string        `yaml:"log_level" env:"LOG_LEVEL" env-default:"DEBUG"`
-	DBHost    string `yaml:"db_host" env:"DB_HOST" env-default:"db"`
-	DBUser    string `yaml:"db_user" env:"DB_USER" env-default:"postgres"`
-	DBPassword    string `yaml:"db_password" env:"DB_PASSWORD" env-default:"postgres"`
-	DBName    string `yaml:"db_name" env:"DB_NAME" env-default:"postgres"`
-	DBPort    string `yaml:"db_port" env:"DB_PORT" env-default:"5432"`
+	HttpServerAddress string        `env:"HTTP_SERVER_ADDRESS" env-default:"localhost:8081"`
+	HttpServerTimeout time.Duration `env:"HTTP_SERVER_TIMEOUT" env-default:"5s"`
+	LogLevel          string        `env:"LOG_LEVEL" env-default:"DEBUG"`
+	DBHost            string        `env:"DB_HOST" env-default:"db"`
+	DBUser            string        `env:"DB_USER" env-default:"postgres"`
+	DBPassword        string        `env:"DB_PASSWORD" env-default:"postgres"`
+	DBName            string        `env:"DB_NAME" env-default:"postgres"`
+	DBPort            string        `env:"DB_PORT" env-default:"5432"`
 }
 
-
 func MustLoadCfg(configPath string) Config {
-	var cfg Config
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
-		log.Fatalf("cannot read http config %q: %s", configPath, err)
+	if err := godotenv.Load(configPath); err != nil {
+		log.Fatalf("failed to load .env file: %s", err)
 	}
+
+	var cfg Config
+
+	if err := cleanenv.ReadEnv(&cfg); err != nil {
+		log.Fatalf("failed to read environment variables: %s", err)
+	}
+
 	return cfg
 }
