@@ -71,7 +71,10 @@ curl -X GET "http://localhost:8081/songs?group_name=Muse"
 ```
 
 #### Пример запроса с пагинацией: 
+
+```bash
 curl -X GET "http://localhost:8081/songs?page=1&limit=3"
+```
 
 ### 2. Добавить новую песню
 #### Метод: PUT
@@ -80,10 +83,13 @@ curl -X GET "http://localhost:8081/songs?page=1&limit=3"
 
 #### Тело запроса (JSON):
 
+```
 {
   "song": "Supermassive Black Hole",
   "group": "Muse"
 }
+```
+
 #### Пример:
 
 ```bash
@@ -102,6 +108,7 @@ curl -X PUT "http://localhost:8081/songs" \
 
 #### Тело запроса (JSON):
 
+```
 {
   "group_name": "New Group Name",
   "song_name": "New Song Name",
@@ -109,6 +116,7 @@ curl -X PUT "http://localhost:8081/songs" \
   "text": "New lyrics",
   "link": "https://new-link.com"
 }
+```
 
 ####  Пример:
 
