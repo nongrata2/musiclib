@@ -9,17 +9,15 @@ import (
 
 	"musiclib/db"
 	"musiclib/api/core"
+	"musiclib/api/externalapi"
 )
 
 
-func AddSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
+func AddSongHandler(log *slog.Logger, db *db.DB, apiBaseURL string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         var request struct {
             Group string `json:"group"`
             Songname  string `json:"song"`
-			// Text string `json:"text"`
-			// ReleaseDate string `json:"release_date"`
-			// Link string `json:"link"`
         }
 
         if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -28,15 +26,19 @@ func AddSongHandler(log *slog.Logger, db *db.DB) http.HandlerFunc {
             return
         }
 
+		apiResponse, err := externalapi.GetDataFromExternalAPI(apiBaseURL, request.Group, request.Songname)
+		if err != nil {
+			log.Error("failed to get data from external API", "error", err)
+			http.Error(w, "Failed to get data from external API", http.StatusInternalServerError)
+			return
+		}
+		
         newSong := core.Song{
             Group: request.Group,
             Songname:  request.Songname,
-			Text: "i love you",
-			ReleaseDate: "23.10.209",
-			Link: "google.com",
-			// Text:  request.Text,
-			// ReleaseDate: request.ReleaseDate,
-			// Link: request.Link,
+			Text:  apiResponse.Text,
+			ReleaseDate: apiResponse.ReleaseDate,
+			Link: apiResponse.Link,
         }
 
         if err := db.Add(r.Context(), newSong); err != nil {

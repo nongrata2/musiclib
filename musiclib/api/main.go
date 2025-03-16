@@ -46,9 +46,12 @@ func main() {
 
 	log.Info("successfully connected to database")
 
+	
 	mux := http.NewServeMux()
 
-	mux.Handle("PUT /songs", rest.AddSongHandler(log, storage))
+	externalAPIURL := "http://172.17.0.1:8082" // put external api url here
+
+	mux.Handle("PUT /songs", rest.AddSongHandler(log, storage, externalAPIURL))
 	mux.Handle("PUT /songs/{songID}", rest.EditSongHandler(log, storage))
 	mux.Handle("GET /songs", rest.GetLibDataHandler(log, storage))
 	mux.Handle("GET /songs/{songID}", rest.GetLyricsHandler(log, storage))
