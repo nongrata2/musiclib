@@ -12,12 +12,34 @@
    git clone https://github.com/nongrata2/musiclib.git
    cd musiclib
    ```
-2. **Запустите проект с помощью Docker Compose**:
+2. **Создайте файл .env ВНУТРИ папки musiclib со следующими параметрами:**
+
+```
+HTTP_SERVER_ADDRESS=
+HTTP_SERVER_TIMEOUT=
+LOG_LEVEL=
+DB_HOST=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+DB_PORT=
+```
+Пример:
+```
+HTTP_SERVER_ADDRESS=localhost:8081
+HTTP_SERVER_TIMEOUT=5s
+LOG_LEVEL=DEBUG
+DB_HOST=db
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=postgres
+DB_PORT=5432
+```
+3. **Запустите проект с помощью Docker Compose**:
 
 ```bash
 docker compose up --build
 ```
-Эта команда соберёт Docker-образы для API и базы данных и запустит контейнеры с API и PostgreSQL.
 
 После запуска API будет доступен по адресу http://localhost:8081. Для тестирования можно использовать curl.
 
