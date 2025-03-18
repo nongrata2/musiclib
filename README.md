@@ -13,7 +13,7 @@
    cd musiclib
 ```
 
-2. Создайте файл .env ВНУТРИ папки musiclib со следующими параметрами:
+2. Создайте файл .env в корневой папке со следующими параметрами:
 ```
 HTTP_SERVER_ADDRESS=
 HTTP_SERVER_TIMEOUT=
