@@ -5,10 +5,12 @@ import (
 	"log/slog"
 	"fmt"
 	"strings"
+	stdErrors "errors"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	"database/sql"
+	// "database/sql"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/nongrata2/musiclib/internal/models"
 	"github.com/nongrata2/musiclib/pkg/errors"
@@ -76,8 +78,8 @@ func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, lim
     var args []any
     i := 1
 
-    addCondition(&conditions, &args, "group_name", filters.GroupName, &i)
-    addCondition(&conditions, &args, "song_name", filters.SongName, &i)
+    addCondition(&conditions, &args, "group_name", filters.Group, &i)
+    addCondition(&conditions, &args, "song_name", filters.Songname, &i)
     addCondition(&conditions, &args, "release_date", filters.ReleaseDate, &i)
     addCondition(&conditions, &args, "text", filters.Text, &i)
     addCondition(&conditions, &args, "link", filters.Link, &i)
@@ -137,7 +139,7 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
     query := `SELECT text FROM songs WHERE id = $1`
     err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
     if err != nil {
-        if err == sql.ErrNoRows {
+        if err == pgx.ErrNoRows {
             db.Log.Error("no song found with the given ID", "id", songID)
             return "", errors.NotFoundErr
         }
@@ -172,45 +174,36 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
 func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Song, error) {
     db.Log.Debug("started updating song DB")
 
-    var exists bool
-    checkQuery := `SELECT EXISTS(SELECT 1 FROM songs WHERE id = $1)`
-    err := db.Conn.GetContext(ctx, &exists, checkQuery, id)
-    if err != nil {
-        db.Log.Error("failed to check if song exists", "error", err)
-        return nil, err
-    }
-
-    if !exists {
-        db.Log.Error("no song found with the given ID", "id", id)
-        return nil, errors.NotFoundErr
-    }
-
     query := `
         UPDATE songs
-        SET group_name = :group_name,
-            song_name = :song_name,
-            release_date = :release_date,
-            text = :text,
-            link = :link
-        WHERE id = :id
+        SET group_name = $1,
+            song_name = $2,
+            release_date = $3,
+            text = $4,
+            link = $5
+        WHERE id = $6
+        RETURNING *
     `
 
-    song.ID = id
+    var updatedSong models.Song
+    err := db.Conn.QueryRowContext(ctx, query, song.Group, song.Songname, song.ReleaseDate, song.Text, song.Link, id).Scan(
+        &updatedSong.ID,
+        &updatedSong.Group,
+        &updatedSong.Songname,
+        &updatedSong.ReleaseDate,
+        &updatedSong.Text,
+        &updatedSong.Link,
+    )
 
-    _, err = db.Conn.NamedExecContext(ctx, query, song)
     if err != nil {
+        if stdErrors.Is(err, pgx.ErrNoRows) {
+            db.Log.Error("no song found with the given ID", "id", id)
+            return nil, errors.NotFoundErr
+        }
         db.Log.Error("failed to update song", "error", err)
         return nil, err
     }
 
-    var updatedSong models.Song
-    getQuery := `SELECT * FROM songs WHERE id = $1`
-    err = db.Conn.GetContext(ctx, &updatedSong, getQuery, id)
-    if err != nil {
-        db.Log.Error("failed to fetch updated song", "error", err)
-        return nil, err
-    }
     db.Log.Debug("end updating song DB")
-
     return &updatedSong, nil
 }
