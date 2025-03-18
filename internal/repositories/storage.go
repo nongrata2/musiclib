@@ -11,7 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"database/sql"
 
-	"musiclib/internal/models"
+	"github.com/nongrata2/musiclib/internal/models"
 )
 
 type DB struct {

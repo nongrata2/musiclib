@@ -6,7 +6,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/pgx"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 
-	"musiclib/migrations"
+	"github.com/nongrata2/musiclib/migrations"
 )
 
 func (db *DB) Migrate() error {

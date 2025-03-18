@@ -1,4 +1,4 @@
-module musiclib
+module github.com/nongrata2/musiclib
 
 go 1.23.6
 

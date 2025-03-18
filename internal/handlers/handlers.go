@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"musiclib/internal/repositories"
-	"musiclib/internal/models"
-	"musiclib/internal/externalapi"
+	"github.com/nongrata2/musiclib/internal/repositories"
+	"github.com/nongrata2/musiclib/internal/models"
+	"github.com/nongrata2/musiclib/internal/externalapi"
 )
 
 

@@ -11,9 +11,9 @@ import (
 	"os/signal"
 	"time"
 
-	"musiclib/internal/config"
-	"musiclib/internal/handlers"
-	"musiclib/internal/repositories"
+	"github.com/nongrata2/musiclib/internal/config"
+	"github.com/nongrata2/musiclib/internal/handlers"
+	"github.com/nongrata2/musiclib/internal/repositories"
 )
 
 func main() {
