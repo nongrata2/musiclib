@@ -1,0 +1,234 @@
+definitions:
+  models.Song:
+    description: Represents a song in the database.
+    properties:
+      group:
+        description: '@Description The name of the music group.'
+        type: string
+      id:
+        description: '@Description The unique identifier of the song.'
+        type: integer
+      link:
+        description: '@Description The external link to the song (e.g.,"https://www.youtube.com/watch?v=Xsp3_a-PMTw").'
+        type: string
+      release_date:
+        description: '@Description The release date of the song (e.g., "16.07.2006").'
+        type: string
+      song:
+        description: '@Description The name of the song.'
+        type: string
+      text:
+        description: '@Description The lyrics or text of the song.'
+        type: string
+    type: object
+  models.SongRequest:
+    description: Represents the request payload for adding a new song.
+    properties:
+      group:
+        description: '@Description The name of the music group.'
+        type: string
+      song:
+        description: '@Description The name of the song.'
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  description: API for music library management
+  title: Music Library API
+  version: "1.0"
+paths:
+  /songs:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of songs with filtering and pagination capabilities
+      parameters:
+      - description: Filter by Group
+        in: query
+        name: group_name
+        type: string
+      - description: Filter by Songname
+        in: query
+        name: song_name
+        type: string
+      - description: Filter by ReleaseDate
+        in: query
+        name: release_date
+        type: string
+      - description: Filter by Text
+        in: query
+        name: text
+        type: string
+      - description: Filter by Link
+        in: query
+        name: link
+        type: string
+      - description: Page Number
+        in: query
+        name: page
+        type: integer
+      - description: Number of elements on one page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Songs list
+          schema:
+            items:
+              $ref: '#/definitions/models.Song'
+            type: array
+        "400":
+          description: Wrong request params
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get library data
+      tags:
+      - songs
+    put:
+      consumes:
+      - application/json
+      description: Adding new song to DB
+      parameters:
+      - description: New song data
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/models.SongRequest'
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Song was added successfully
+          schema:
+            type: string
+        "400":
+          description: Wrong request params
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Add new song
+      tags:
+      - songs
+  /songs/{songID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a song from the database by its ID
+      parameters:
+      - description: Song ID
+        in: path
+        name: songID
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Song was deleted successfully
+          schema:
+            type: string
+        "404":
+          description: Song is not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Delete song
+      tags:
+      - songs
+    put:
+      consumes:
+      - application/json
+      description: Updates song data in the database by song ID
+      parameters:
+      - description: song ID
+        in: path
+        name: songID
+        required: true
+        type: string
+      - description: Updated song details
+        in: body
+        name: song
+        required: true
+        schema:
+          $ref: '#/definitions/models.Song'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated song
+          schema:
+            $ref: '#/definitions/models.Song'
+        "400":
+          description: Wrong request data
+          schema:
+            type: string
+        "404":
+          description: Song is not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Update song
+      tags:
+      - songs
+  /songs/{songID}/lyrics:
+    get:
+      consumes:
+      - application/json
+      description: Returns lyrics of a song with pagynation capability
+      parameters:
+      - description: song ID
+        in: path
+        name: songID
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of verses per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Song text
+          schema:
+            type: string
+        "400":
+          description: Wrong request params
+          schema:
+            type: string
+        "404":
+          description: Song is not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get song lyrics
+      tags:
+      - songs
+schemes:
+- http
+swagger: "2.0"
