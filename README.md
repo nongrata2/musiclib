@@ -182,6 +182,6 @@ curl -X GET "http://localhost:8081/songs/{songID}?page=1&limit=3"
 
 ## Версии
 - Go 1.23.6 
-- PostgreSQL 13.20
+- PostgreSQL 16.8
 - Docker 26.1.3
 - Docker Compose 2.33.0

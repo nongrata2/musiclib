@@ -64,7 +64,7 @@ func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, lim
     query := `SELECT id, group_name, song_name, release_date, text, link FROM songs`
 
     var conditions []string
-    var args []interface{}
+    var args []any
     i := 1
 
     for key, value := range filters {

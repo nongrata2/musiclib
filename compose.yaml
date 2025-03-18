@@ -19,7 +19,7 @@ services:
       - POSTGRES_PORT=${DB_PORT}
 
   db:
-    image: postgres:13-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -27,7 +27,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d musiclib"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
