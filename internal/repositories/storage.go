@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"fmt"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"database/sql"
 
 	"github.com/nongrata2/musiclib/internal/models"
+	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
 type DB struct {
@@ -124,7 +124,7 @@ func (db *DB) Delete(ctx context.Context, songID string) error {
     if rowsAffected == 0 {
         db.Log.Warn("no song found with the given id", "id", songID)
 
-        return errors.New("no song found with the given ID")
+        return errors.NotFoundErr
     }
     db.Log.Debug("ended deleting song DB")
     return nil
@@ -139,7 +139,7 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
     if err != nil {
         if err == sql.ErrNoRows {
             db.Log.Error("no song found with the given ID", "id", songID)
-            return "", errors.New("no song found with the given ID")
+            return "", errors.NotFoundErr
         }
         db.Log.Error("failed to get lyrics of the song", "error", err)
         return "", err
@@ -156,7 +156,7 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
     end := start + limit
 
     if start >= len(verses) {
-        return "", errors.New("page out of range")
+        return "", errors.OutOfRangeErr
     }
     if end > len(verses) {
         end = len(verses)
@@ -182,7 +182,7 @@ func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Son
 
     if !exists {
         db.Log.Error("no song found with the given ID", "id", id)
-        return nil, errors.New("no song found with the given ID")
+        return nil, errors.NotFoundErr
     }
 
     query := `

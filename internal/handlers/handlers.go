@@ -10,6 +10,7 @@ import (
 	"github.com/nongrata2/musiclib/internal/repositories"
 	"github.com/nongrata2/musiclib/internal/models"
 	"github.com/nongrata2/musiclib/internal/externalapi"
+	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
 
@@ -189,6 +190,11 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 
 		songLyrics, err := db.GetLyrics(r.Context(), songID, page, limit)
 		if err != nil {
+			if err == errors.NotFoundErr {
+				log.Error("song with given id is not found", "error", err)
+				http.Error(w, "song with given id is not found", http.StatusNotFound)
+				return
+			}
 			log.Error("failed to get lyrics of the song", "error", err)
 			http.Error(w, "Failed to get lyrics of the song", http.StatusInternalServerError)
 			return
