@@ -13,7 +13,7 @@ import (
 	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
-func AddSongHandler(log *slog.Logger, db *repositories.DB, apiBaseURL string) http.HandlerFunc {
+func AddSongHandler(log *slog.Logger, db repositories.DBInterface, apiBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("adding song handler")
 		log.Info("start adding song")
@@ -59,7 +59,7 @@ func AddSongHandler(log *slog.Logger, db *repositories.DB, apiBaseURL string) ht
 	}
 }
 
-func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
+func GetLibDataHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("getting library data handler")
 		log.Info("start getting data from library")
@@ -136,7 +136,7 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 	}
 }
 
-func DeleteSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
+func DeleteSongHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("deleting song handler")
 		log.Info("start deleting song")
@@ -159,7 +159,7 @@ func DeleteSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 	}
 }
 
-func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
+func GetLyricsHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("getting lyrics handler")
 		log.Info("start getting lyrics")
@@ -219,7 +219,7 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 	}
 }
 
-func EditSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
+func EditSongHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("editing song handler")
 		log.Info("start editing song")

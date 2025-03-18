@@ -14,10 +14,20 @@ import (
 	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
+type DBInterface interface {
+	Add(ctx context.Context, song models.Song) error
+	GetSongs(ctx context.Context, filters models.SongFilter, page, limit int) ([]models.Song, error)
+	Delete(ctx context.Context, songID string) error
+	GetLyrics(ctx context.Context, songID string, page, limit int) (string, error)
+	Update(ctx context.Context, id int, song models.Song) (*models.Song, error)
+}
+
 type DB struct {
 	Log  *slog.Logger
 	Conn *pgxpool.Pool
 }
+
+var _ DBInterface = (*DB)(nil)
 
 func addCondition(conditions *[]string, args *[]any, field string, value string, index *int) {
 	if value != "" {
