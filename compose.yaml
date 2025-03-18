@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   api:
     build:
-      context: musiclib
+      context: .
       dockerfile: Dockerfile
     ports:
       - "8081:8080"
@@ -11,10 +9,10 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./musiclib/.env:/.env
+      - .env:/.env
     environment:
       - HTTP_SERVER_ADDRESS=${HTTP_SERVER_ADDRESS}
-      - POSTGRES_HOST=${DB_HOST}
+      - POSTGRES_HOST=db
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_NAME=${DB_NAME}
