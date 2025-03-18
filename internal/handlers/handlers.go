@@ -63,8 +63,8 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 		log.Info("start getting data from library")
 
         filters := models.SongFilter{
-            GroupName:   r.URL.Query().Get("group_name"),
-            SongName:    r.URL.Query().Get("song_name"),
+            Group:   r.URL.Query().Get("group_name"),
+            Songname:    r.URL.Query().Get("song_name"),
             ReleaseDate: r.URL.Query().Get("release_date"),
             Text:        r.URL.Query().Get("text"),
             Link:        r.URL.Query().Get("link"),
