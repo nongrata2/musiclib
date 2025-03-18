@@ -68,6 +68,7 @@ func (db *DB) Add(ctx context.Context, song models.Song) error {
 func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, limit int) ([]models.Song, error) {
     db.Log.Debug("started getting song list DB")
     var songs []models.Song
+	var maxLimit = 20
 
     query := `SELECT id, group_name, song_name, release_date, text, link FROM songs`
 
@@ -85,7 +86,10 @@ func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, lim
         query += " WHERE " + strings.Join(conditions, " AND ")
     }
 
-	if limit != 0 && page != 0 { // need pagy
+	if limit != 0 && page != 0 {
+		if limit > maxLimit {
+ 			limit = maxLimit
+		}
         offset := (page - 1) * limit
         query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
