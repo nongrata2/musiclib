@@ -1,19 +1,17 @@
 package repositories
 
 import (
-	"embed"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-)
 
-//go:embed migrations/*.sql
-var migrationFiles embed.FS
+	"musiclib/migrations"
+)
 
 func (db *DB) Migrate() error {
 	db.Log.Debug("running migration")
-	files, err := iofs.New(migrationFiles, "migrations") // get migrations from
+	files, err := iofs.New(migrations.MigrationFiles, ".")
 	if err != nil {
 		return err
 	}

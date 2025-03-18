@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY cmd/musiclib ./cmd/musiclib
 COPY internal ./internal
-# COPY migrations ./migrations
+COPY migrations ./migrations
 
 RUN CGO_ENABLED=0 go build -o /musiclib ./cmd/musiclib/main.go
 
