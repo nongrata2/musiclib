@@ -7,9 +7,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/nongrata2/musiclib/internal/models"
 	"github.com/nongrata2/musiclib/pkg/errors"
@@ -17,7 +16,7 @@ import (
 
 type DB struct {
 	Log  *slog.Logger
-	Conn *sqlx.DB
+	Conn *pgxpool.Pool
 }
 
 func addCondition(conditions *[]string, args *[]any, field string, value string, index *int) {
@@ -29,16 +28,22 @@ func addCondition(conditions *[]string, args *[]any, field string, value string,
 }
 
 func New(log *slog.Logger, address string) (*DB, error) {
-
-	db, err := sqlx.Connect("pgx", address)
+	pool, err := pgxpool.New(context.Background(), address)
 	if err != nil {
 		log.Error("connection problem", "address", address, "error", err)
 		return nil, err
 	}
 
+	if err := pool.Ping(context.Background()); err != nil {
+		log.Error("failed to ping database", "error", err)
+		return nil, err
+	}
+
+	log.Info("successfully connected to database", "address", address)
+
 	return &DB{
 		Log:  log,
-		Conn: db,
+		Conn: pool,
 	}, nil
 }
 
@@ -50,7 +55,7 @@ func (db *DB) Add(ctx context.Context, song models.Song) error {
         VALUES ($1, $2, $3, $4, $5)
     `
 
-	_, err := db.Conn.ExecContext(ctx, query,
+	_, err := db.Conn.Exec(ctx, query,
 		song.Group,
 		song.Songname,
 		song.ReleaseDate,
@@ -95,9 +100,32 @@ func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, lim
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
 
-	err := db.Conn.SelectContext(ctx, &songs, query, args...)
+	rows, err := db.Conn.Query(ctx, query, args...)
 	if err != nil {
 		db.Log.Error("failed to fetch songs", "error", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var song models.Song
+		err := rows.Scan(
+			&song.ID,
+			&song.Group,
+			&song.Songname,
+			&song.ReleaseDate,
+			&song.Text,
+			&song.Link,
+		)
+		if err != nil {
+			db.Log.Error("failed to scan song row", "error", err)
+			return nil, err
+		}
+		songs = append(songs, song)
+	}
+
+	if err := rows.Err(); err != nil {
+		db.Log.Error("error while iterating over rows", "error", err)
 		return nil, err
 	}
 
@@ -110,21 +138,16 @@ func (db *DB) Delete(ctx context.Context, songID string) error {
 
 	query := `DELETE FROM songs WHERE id = $1`
 
-	result, err := db.Conn.ExecContext(ctx, query, songID)
+	result, err := db.Conn.Exec(ctx, query, songID)
 	if err != nil {
 		db.Log.Error("failed to delete song", "error", err)
 		return err
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		db.Log.Error("failed to get rows affected", "error", err)
-		return err
-	}
+	rowsAffected := result.RowsAffected()
 
 	if rowsAffected == 0 {
 		db.Log.Warn("no song found with the given id", "id", songID)
-
 		return errors.NotFoundErr
 	}
 	db.Log.Debug("ended deleting song DB")
@@ -136,9 +159,9 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
 	var songLyrics string
 
 	query := `SELECT text FROM songs WHERE id = $1`
-	err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
+	err := db.Conn.QueryRow(ctx, query, songID).Scan(&songLyrics)
 	if err != nil {
-		if stdErrors.Is(err, sql.ErrNoRows) {
+		if stdErrors.Is(err, pgx.ErrNoRows) {
 			db.Log.Error("no song found with the given ID", "id", songID)
 			return "", errors.NotFoundErr
 		}
@@ -185,7 +208,7 @@ func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Son
     `
 
 	var updatedSong models.Song
-	err := db.Conn.QueryRowContext(ctx, query, song.Group, song.Songname, song.ReleaseDate, song.Text, song.Link, id).Scan(
+	err := db.Conn.QueryRow(ctx, query, song.Group, song.Songname, song.ReleaseDate, song.Text, song.Link, id).Scan(
 		&updatedSong.ID,
 		&updatedSong.Group,
 		&updatedSong.Songname,
@@ -195,7 +218,7 @@ func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Son
 	)
 
 	if err != nil {
-		if stdErrors.Is(err, sql.ErrNoRows) {
+		if stdErrors.Is(err, pgx.ErrNoRows) {
 			db.Log.Error("no song found with the given ID", "id", id)
 			return nil, errors.NotFoundErr
 		}

@@ -4,6 +4,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/pgx"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/nongrata2/musiclib/migrations"
 )
@@ -14,12 +15,18 @@ func (db *DB) Migrate() error {
 	if err != nil {
 		return err
 	}
-	driver, err := pgx.WithInstance(db.Conn.DB, &pgx.Config{})
+
+	sqlDB := stdlib.OpenDBFromPool(db.Conn)
+	defer sqlDB.Close()
+
+	driver, err := pgx.WithInstance(sqlDB, &pgx.Config{})
 	if err != nil {
+		db.Log.Error("failed to create pgx driver for migrations", "error", err)
 		return err
 	}
 	m, err := migrate.NewWithInstance("iofs", files, "pgx", driver)
 	if err != nil {
+		db.Log.Error("failed to initialize migrations", "error", err)
 		return err
 	}
 
