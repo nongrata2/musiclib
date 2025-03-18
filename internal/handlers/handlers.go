@@ -1,33 +1,32 @@
 package handlers
-	
+
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"fmt"
 	"strconv"
 
-	"github.com/nongrata2/musiclib/internal/repositories"
-	"github.com/nongrata2/musiclib/internal/models"
 	"github.com/nongrata2/musiclib/internal/externalapi"
+	"github.com/nongrata2/musiclib/internal/models"
+	"github.com/nongrata2/musiclib/internal/repositories"
 	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
-
 func AddSongHandler(log *slog.Logger, db *repositories.DB, apiBaseURL string) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("adding song handler")
 		log.Info("start adding song")
-        var request struct {
-            Group string `json:"group"`
-            Songname  string `json:"song"`
-        }
+		var request struct {
+			Group    string `json:"group"`
+			Songname string `json:"song"`
+		}
 
-        if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-            log.Error("failed to decode request body", "error", err)
-            http.Error(w, "Invalid request body", http.StatusBadRequest)
-            return
-        }
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			log.Error("failed to decode request body", "error", err)
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
 
 		apiResponse, err := externalapi.GetDataFromExternalAPI(apiBaseURL, request.Group, request.Songname)
 		if err != nil {
@@ -35,40 +34,43 @@ func AddSongHandler(log *slog.Logger, db *repositories.DB, apiBaseURL string) ht
 			http.Error(w, "Failed to get data from external API", http.StatusInternalServerError)
 			return
 		}
-		
-        newSong := models.Song{
-            Group: request.Group,
-            Songname:  request.Songname,
-			Text:  apiResponse.Text,
+
+		newSong := models.Song{
+			Group:       request.Group,
+			Songname:    request.Songname,
+			Text:        apiResponse.Text,
 			ReleaseDate: apiResponse.ReleaseDate,
-			Link: apiResponse.Link,
-        }
+			Link:        apiResponse.Link,
+		}
 
-        if err := db.Add(r.Context(), newSong); err != nil {
-            log.Error("failed to add song", "error", err)
-            http.Error(w, "Failed to add song", http.StatusInternalServerError)
-            return
-        }
+		if err := db.Add(r.Context(), newSong); err != nil {
+			log.Error("failed to add song", "error", err)
+			http.Error(w, "Failed to add song", http.StatusInternalServerError)
+			return
+		}
 
-        w.WriteHeader(http.StatusCreated)
-        w.Write([]byte("Song was added successfully\n"))
+		w.WriteHeader(http.StatusCreated)
+		_, err = w.Write([]byte("Song was added successfully\n"))
+		if err != nil {
+			log.Error("error writing", "error", err)
+		}
+
 		log.Info("end adding song")
-    }
+	}
 }
 
-
 func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("getting library data handler")
 		log.Info("start getting data from library")
 
-        filters := models.SongFilter{
-            Group:   r.URL.Query().Get("group_name"),
-            Songname:    r.URL.Query().Get("song_name"),
-            ReleaseDate: r.URL.Query().Get("release_date"),
-            Text:        r.URL.Query().Get("text"),
-            Link:        r.URL.Query().Get("link"),
-        }
+		filters := models.SongFilter{
+			Group:       r.URL.Query().Get("group_name"),
+			Songname:    r.URL.Query().Get("song_name"),
+			ReleaseDate: r.URL.Query().Get("release_date"),
+			Text:        r.URL.Query().Get("text"),
+			Link:        r.URL.Query().Get("link"),
+		}
 
 		pagestr := r.URL.Query().Get("page")
 		limitstr := r.URL.Query().Get("limit")
@@ -83,10 +85,10 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 				http.Error(w, "wrong page number", http.StatusInternalServerError)
 				return
 			}
-		}else{
+		} else {
 			page = 0
 		}
-		
+
 		if limitstr != "" {
 			limit, err = strconv.Atoi(limitstr)
 			if err != nil || limit < 1 {
@@ -94,7 +96,7 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 				http.Error(w, "wrong limit number", http.StatusInternalServerError)
 				return
 			}
-		}else {
+		} else {
 			limit = 0
 		}
 
@@ -103,16 +105,19 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 			limit, page = 0, 0
 		}
 
-        songs, err := db.GetSongs(r.Context(), filters, page, limit)
-        if err != nil {
-            log.Error("failed to fetch songs", "error", err)
-            http.Error(w, "Failed to fetch songs", http.StatusInternalServerError)
-            return
-        }
+		songs, err := db.GetSongs(r.Context(), filters, page, limit)
+		if err != nil {
+			log.Error("failed to fetch songs", "error", err)
+			http.Error(w, "Failed to fetch songs", http.StatusInternalServerError)
+			return
+		}
 
-		if len(songs) == 0{
-			w.Write([]byte("No songs was found\n")) 
-		}else{
+		if len(songs) == 0 {
+			_, err := w.Write([]byte("No songs was found\n"))
+			if err != nil {
+				log.Error("error writing", "error", err)
+			}
+		} else {
 			w.Header().Set("Content-Type", "application/json")
 
 			jsonData, err := json.MarshalIndent(songs, "", "  ")
@@ -121,13 +126,15 @@ func GetLibDataHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 				http.Error(w, "Failed to encode songs", http.StatusInternalServerError)
 				return
 			}
-	
-			w.Write(jsonData) 
+
+			_, err = w.Write(jsonData)
+			if err != nil {
+				log.Error("error writing", "error", err)
+			}
 		}
 		log.Info("end getting data from library")
-    }
+	}
 }
-
 
 func DeleteSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -136,18 +143,21 @@ func DeleteSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 		songID := r.PathValue("songID")
 
 		if err := db.Delete(r.Context(), songID); err != nil {
-            log.Error("failed to delete song", "error", err)
-            http.Error(w, "Failed to delete song", http.StatusInternalServerError)
-            return
-        }
+			log.Error("failed to delete song", "error", err)
+			http.Error(w, "Failed to delete song", http.StatusInternalServerError)
+			return
+		}
 
-        w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusOK)
 		outstr := fmt.Sprintf("song with id %v was deleted successfully\n", songID)
-        w.Write([]byte(outstr))
+		_, err := w.Write([]byte(outstr))
+		if err != nil {
+			log.Error("error writing", "error", err)
+		}
+
 		log.Info("end deleting song")
 	}
 }
-
 
 func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -168,7 +178,7 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 				http.Error(w, "wrong page number", http.StatusInternalServerError)
 				return
 			}
-		}else{
+		} else {
 			page = 0
 		}
 
@@ -179,7 +189,7 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 				http.Error(w, "wrong limit number", http.StatusInternalServerError)
 				return
 			}
-		}else {
+		} else {
 			limit = 0
 		}
 
@@ -201,57 +211,67 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(songLyrics))
+		_, err = w.Write([]byte(songLyrics))
+		if err != nil {
+			log.Error("error writing", "error", err)
+		}
 		log.Info("end getting lyrics")
 	}
 }
 
-
 func EditSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("editing song handler")
 		log.Info("start editing song")
-		
-        songIDstr := r.PathValue("songID")
 
-        songID, err := strconv.Atoi(songIDstr)
-        if err != nil {
-            log.Error("invalid song ID", "error", err)
-            http.Error(w, "Invalid song ID", http.StatusBadRequest)
-            return
-        }
+		songIDstr := r.PathValue("songID")
 
-        var song models.Song
-        if err := json.NewDecoder(r.Body).Decode(&song); err != nil {
-            log.Error("failed to decode request body", "error", err)
-            http.Error(w, "Invalid request body", http.StatusBadRequest)
-            return
-        }
+		songID, err := strconv.Atoi(songIDstr)
+		if err != nil {
+			log.Error("invalid song ID", "error", err)
+			http.Error(w, "Invalid song ID", http.StatusBadRequest)
+			return
+		}
 
-        updatedSong, err := db.Update(r.Context(), songID, song)
-        if err != nil {
-			if err == errors.NotFoundErr{
+		var song models.Song
+		if err := json.NewDecoder(r.Body).Decode(&song); err != nil {
+			log.Error("failed to decode request body", "error", err)
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		updatedSong, err := db.Update(r.Context(), songID, song)
+		if err != nil {
+			if err == errors.NotFoundErr {
 				log.Error("no song with the given ID", "error", err)
 				http.Error(w, "no song with the given ID", http.StatusNotFound)
 				return
 			}
-            log.Error("failed to update song", "error", err)
-            http.Error(w, "Failed to update song", http.StatusInternalServerError)
-            return
-        }
+			log.Error("failed to update song", "error", err)
+			http.Error(w, "Failed to update song", http.StatusInternalServerError)
+			return
+		}
 
-		w.Write([]byte("song was updated successfully\n"))
+		_, err = w.Write([]byte("song was updated successfully\n"))
+		if err != nil {
+			log.Error("error writing", "error", err)
+		}
+
 		w.WriteHeader(http.StatusOK)
 
-        w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 
-        jsonData, err := json.MarshalIndent(updatedSong, "", "  ")
-        if err != nil {
-            log.Error("failed to encode song to JSON", "error", err)
-            http.Error(w, "Failed to encode song", http.StatusInternalServerError)
-            return
-        }
-        w.Write(jsonData)
+		jsonData, err := json.MarshalIndent(updatedSong, "", "  ")
+		if err != nil {
+			log.Error("failed to encode song to JSON", "error", err)
+			http.Error(w, "Failed to encode song", http.StatusInternalServerError)
+			return
+		}
+		_, err = w.Write(jsonData)
+		if err != nil {
+			log.Error("error writing", "error", err)
+		}
+
 		log.Info("end editing song")
-    }
+	}
 }

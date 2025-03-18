@@ -17,7 +17,7 @@ type Config struct {
 	DBPassword        string        `env:"DB_PASSWORD" env-default:"postgres"`
 	DBName            string        `env:"DB_NAME" env-default:"postgres"`
 	DBPort            string        `env:"DB_PORT" env-default:"5432"`
-	ExternalAPIURL	  string		`env:"EXTERNAL_APIURL" env-default:"http://172.17.0.1:8082"`
+	ExternalAPIURL    string        `env:"EXTERNAL_APIURL" env-default:"http://172.17.0.1:8082"`
 }
 
 func MustLoadCfg(configPath string) Config {

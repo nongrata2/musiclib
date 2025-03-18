@@ -26,13 +26,13 @@ func main() {
 	log := mustMakeLogger(cfg.LogLevel)
 
 	log.Info("starting server")
-	
+
 	log.Debug("debug messages are enabled")
 
 	// db
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
-	cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort,)
+		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
 
 	storage, err := repositories.New(log, dsn)
 	if err != nil {
@@ -46,7 +46,6 @@ func main() {
 
 	log.Info("successfully connected to database")
 
-	
 	mux := http.NewServeMux()
 
 	externalAPIURL := cfg.ExternalAPIURL
