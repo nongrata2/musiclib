@@ -191,8 +191,8 @@ func GetLyricsHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 		songLyrics, err := db.GetLyrics(r.Context(), songID, page, limit)
 		if err != nil {
 			if err == errors.NotFoundErr {
-				log.Error("song with given id is not found", "error", err)
-				http.Error(w, "song with given id is not found", http.StatusNotFound)
+				log.Error("no song with the given ID", "error", err)
+				http.Error(w, "no song with the given ID", http.StatusNotFound)
 				return
 			}
 			log.Error("failed to get lyrics of the song", "error", err)
@@ -230,6 +230,11 @@ func EditSongHandler(log *slog.Logger, db *repositories.DB) http.HandlerFunc {
 
         updatedSong, err := db.Update(r.Context(), songID, song)
         if err != nil {
+			if err == errors.NotFoundErr{
+				log.Error("no song with the given ID", "error", err)
+				http.Error(w, "no song with the given ID", http.StatusNotFound)
+				return
+			}
             log.Error("failed to update song", "error", err)
             http.Error(w, "Failed to update song", http.StatusInternalServerError)
             return

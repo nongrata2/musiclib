@@ -9,8 +9,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
-	// "database/sql"
-	"github.com/jackc/pgx/v5"
+	"database/sql"
 
 	"github.com/nongrata2/musiclib/internal/models"
 	"github.com/nongrata2/musiclib/pkg/errors"
@@ -139,7 +138,7 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
     query := `SELECT text FROM songs WHERE id = $1`
     err := db.Conn.GetContext(ctx, &songLyrics, query, songID)
     if err != nil {
-        if err == pgx.ErrNoRows {
+        if stdErrors.Is(err, sql.ErrNoRows) {
             db.Log.Error("no song found with the given ID", "id", songID)
             return "", errors.NotFoundErr
         }
@@ -196,7 +195,7 @@ func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Son
     )
 
     if err != nil {
-        if stdErrors.Is(err, pgx.ErrNoRows) {
+        if stdErrors.Is(err, sql.ErrNoRows) {
             db.Log.Error("no song found with the given ID", "id", id)
             return nil, errors.NotFoundErr
         }
