@@ -19,6 +19,14 @@ type DB struct {
 	Conn *sqlx.DB
 }
 
+func addCondition(conditions *[]string, args *[]any, field string, value string, index *int) {
+    if value != "" {
+        *conditions = append(*conditions, fmt.Sprintf("%s = $%d", field, *index))
+        *args = append(*args, value)
+        *index++
+    }
+}
+
 func New(log *slog.Logger, address string) (*DB, error) {
 
 	db, err := sqlx.Connect("pgx", address)
@@ -57,9 +65,10 @@ func (db *DB) Add(ctx context.Context, song models.Song) error {
     return nil
 }
 
-func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, limit int) ([]models.Song, error) {
+func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, limit int) ([]models.Song, error) {
     db.Log.Debug("started getting song list DB")
     var songs []models.Song
+	var maxLimit = 20
 
     query := `SELECT id, group_name, song_name, release_date, text, link FROM songs`
 
@@ -67,19 +76,20 @@ func (db *DB) GetSongs(ctx context.Context, filters map[string]string, page, lim
     var args []any
     i := 1
 
-    for key, value := range filters {
-        if value != "" {
-            conditions = append(conditions, fmt.Sprintf("%s = $%d", key, i))
-            args = append(args, value)
-            i++
-        }
-    }
+    addCondition(&conditions, &args, "group_name", filters.GroupName, &i)
+    addCondition(&conditions, &args, "song_name", filters.SongName, &i)
+    addCondition(&conditions, &args, "release_date", filters.ReleaseDate, &i)
+    addCondition(&conditions, &args, "text", filters.Text, &i)
+    addCondition(&conditions, &args, "link", filters.Link, &i)
 
     if len(conditions) > 0 {
         query += " WHERE " + strings.Join(conditions, " AND ")
     }
 
-	if limit != 0 && page != 0 { // need pagy
+	if limit != 0 && page != 0 {
+		if limit > maxLimit {
+ 			limit = maxLimit
+		}
         offset := (page - 1) * limit
         query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
