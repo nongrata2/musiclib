@@ -11,11 +11,13 @@ import (
 
 func (db *DB) Migrate() error {
 	db.Log.Debug("running migration")
-	files, err := iofs.New(migrations.MigrationFiles, ".")
-	if err != nil {
-		return err
-	}
-
+    files, err := iofs.New(migrations.MigrationFiles, ".")
+    if err != nil {
+        db.Log.Error("failed to load migration files", "error", err)
+        return err
+    }
+    db.Log.Debug("migration files loaded successfully")
+	
 	sqlDB := stdlib.OpenDBFromPool(db.Conn)
 	defer sqlDB.Close()
 
