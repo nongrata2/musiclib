@@ -214,7 +214,7 @@ func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Son
             text = $4,
             link = $5
         WHERE id = $6
-        RETURNING *
+        RETURNING id, group_name, song_name, release_date, text, link
     `
 
 	var updatedSong models.Song
