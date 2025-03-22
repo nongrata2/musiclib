@@ -8,7 +8,7 @@ import (
 )
 
 type APIResponse struct {
-	ReleaseDate string `json:"releaseDate"`
+	ReleaseDate string `json:"release_date"`
 	Text        string `json:"text"`
 	Link        string `json:"link"`
 }

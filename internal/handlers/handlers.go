@@ -18,8 +18,8 @@ func AddSongHandler(log *slog.Logger, db repositories.DBInterface, apiBaseURL st
 		log.Debug("adding song handler")
 		log.Info("start adding song")
 		var request struct {
-			Group    string `json:"group"`
-			Songname string `json:"song"`
+			Group    string `json:"group_name"`
+			Songname string `json:"song_name"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
