@@ -100,8 +100,8 @@ curl -X GET "http://localhost:8081/songs?page=1&limit=3"
 
 ```
 {
-  "song": "Supermassive Black Hole",
-  "group": "Muse"
+  "song_name": "Supermassive Black Hole",
+  "group_name": "Muse"
 }
 ```
 
@@ -111,8 +111,8 @@ curl -X GET "http://localhost:8081/songs?page=1&limit=3"
 curl -X PUT "http://localhost:8081/songs" \
      -H "Content-Type: application/json" \
      -d '{
-           "song":"Supermassive Black Hole",
-           "group":"Muse"
+           "song_name":"Supermassive Black Hole",
+           "group_name":"Muse"
          }'
 ```
 
@@ -141,7 +141,7 @@ curl -X PUT "http://localhost:8081/songs/{songID}" \
      -d '{
            "group_name": "New Group Name",
            "song_name": "New Song Name",
-           "release_date": "2023-10-01",
+           "release_date": "2006-01-02T15:04:05Z",
            "text": "New lyrics",
            "link": "https://new-link.com"
          }'

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/nongrata2/musiclib/internal/externalapi"
 	"github.com/nongrata2/musiclib/internal/models"
@@ -67,10 +68,21 @@ func GetLibDataHandler(log *slog.Logger, db repositories.DBInterface) http.Handl
 		filters := models.SongFilter{
 			Group:       r.URL.Query().Get("group_name"),
 			Songname:    r.URL.Query().Get("song_name"),
-			ReleaseDate: r.URL.Query().Get("release_date"),
 			Text:        r.URL.Query().Get("text"),
 			Link:        r.URL.Query().Get("link"),
 		}
+
+        releaseDateStr := r.URL.Query().Get("release_date")
+        if releaseDateStr != "" {
+            var err error
+            releaseDate, err := time.Parse("2006-01-02", releaseDateStr)
+            if err != nil {
+                log.Error("failed to parse release date", "error", err)
+                http.Error(w, "Invalid release_date format. Expected YYYY-MM-DD", http.StatusBadRequest)
+                return
+            }
+			filters.ReleaseDate = releaseDate
+        }
 
 		pagestr := r.URL.Query().Get("page")
 		limitstr := r.URL.Query().Get("limit")

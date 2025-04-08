@@ -8,7 +8,7 @@ import (
 )
 
 var mockResponse = map[string]interface{}{
-	"releaseDate": "16.07.2006",
+	"release_date": "2006-07-21T00:00:00Z",
 	"text":        "Ooh baby, don't you know I suffer?\nOoh baby, can you hear me moan?",
 	"link":        "https://www.youtube.com/watch?v=Xsp3_a-PMTw",
 }

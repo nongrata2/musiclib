@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"time"
 	"context"
 	stdErrors "errors"
 	"fmt"
@@ -29,11 +30,20 @@ type DB struct {
 
 var _ DBInterface = (*DB)(nil)
 
-func addCondition(conditions *[]string, args *[]any, field string, value string, index *int) {
-	if value != "" {
-		*conditions = append(*conditions, fmt.Sprintf("%s = $%d", field, *index))
-		*args = append(*args, value)
-		*index++
+func addCondition(conditions *[]string, args *[]any, field string, value any, index *int) {
+    switch v := value.(type) {
+    case string:
+        if v != "" {
+            *conditions = append(*conditions, fmt.Sprintf("%s = $%d", field, *index))
+            *args = append(*args, value)
+            *index++
+        }
+    case time.Time:
+        if !v.IsZero() {
+            *conditions = append(*conditions, fmt.Sprintf("%s = $%d", field, *index))
+            *args = append(*args, value)
+            *index++
+        }
 	}
 }
 
@@ -60,18 +70,39 @@ func New(log *slog.Logger, address string) (*DB, error) {
 func (db *DB) Add(ctx context.Context, song models.Song) error {
 
 	db.Log.Debug("started adding song DB")
-	query := `
-        INSERT INTO songs (group_name, song_name, release_date, text, link)
+
+	var groupID int
+    query := `
+        INSERT INTO groups (group_name)
+        VALUES ($1)
+        ON CONFLICT (group_name) DO NOTHING
+        RETURNING id
+    `
+    err := db.Conn.QueryRow(ctx, query, song.Group).Scan(&groupID)
+    if err == pgx.ErrNoRows {
+        query = `SELECT id FROM groups WHERE group_name = $1`
+        err = db.Conn.QueryRow(ctx, query, song.Group).Scan(&groupID)
+        if err != nil {
+            db.Log.Error("failed to get group ID", "error", err)
+            return err
+        }
+    } else if err != nil {
+        db.Log.Error("failed to add or check group", "error", err)
+        return err
+    }
+
+    query = `
+        INSERT INTO songs (group_id, song_name, release_date, text, link)
         VALUES ($1, $2, $3, $4, $5)
     `
+    _, err = db.Conn.Exec(ctx, query,
+        groupID,
+        song.Songname,
+        song.ReleaseDate,
+        song.Text,
+        song.Link,
+    )
 
-	_, err := db.Conn.Exec(ctx, query,
-		song.Group,
-		song.Songname,
-		song.ReleaseDate,
-		song.Text,
-		song.Link,
-	)
 	if err != nil {
 		db.Log.Error("failed to add song", "error", err)
 		return err
@@ -86,7 +117,11 @@ func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, lim
 	var songs []models.Song
 	var maxLimit = 20
 
-	query := `SELECT id, group_name, song_name, release_date, text, link FROM songs`
+    query := `
+        SELECT s.id, g.group_name, s.song_name, s.release_date, s.text, s.link
+        FROM songs s
+        JOIN groups g ON s.group_id = g.id
+    `
 
 	var conditions []string
 	var args []any
@@ -109,6 +144,8 @@ func (db *DB) GetSongs(ctx context.Context, filters models.SongFilter, page, lim
 		offset := (page - 1) * limit
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
+
+    db.Log.Debug("executing query", "query", query, "args", args)
 
 	rows, err := db.Conn.Query(ctx, query, args...)
 	if err != nil {
@@ -206,26 +243,53 @@ func (db *DB) GetLyrics(ctx context.Context, songID string, page, limit int) (st
 func (db *DB) Update(ctx context.Context, id int, song models.Song) (*models.Song, error) {
 	db.Log.Debug("started updating song DB")
 
-	query := `
+    var groupID int
+    query := `
+        INSERT INTO groups (group_name)
+        VALUES ($1)
+        ON CONFLICT (group_name) DO NOTHING
+        RETURNING id
+    `
+    err := db.Conn.QueryRow(ctx, query, song.Group).Scan(&groupID)
+    if err == pgx.ErrNoRows {
+        query = `SELECT id FROM groups WHERE group_name = $1`
+        err = db.Conn.QueryRow(ctx, query, song.Group).Scan(&groupID)
+        if err != nil {
+            db.Log.Error("failed to get group ID", "error", err)
+            return nil, err
+        }
+    } else if err != nil {
+        db.Log.Error("failed to add or check group", "error", err)
+        return nil, err
+    }
+
+    query = `
         UPDATE songs
-        SET group_name = $1,
+        SET group_id = $1,
             song_name = $2,
             release_date = $3,
             text = $4,
             link = $5
         WHERE id = $6
-        RETURNING id, group_name, song_name, release_date, text, link
+        RETURNING id, (SELECT group_name FROM groups WHERE id = $1), song_name, release_date, text, link
     `
 
-	var updatedSong models.Song
-	err := db.Conn.QueryRow(ctx, query, song.Group, song.Songname, song.ReleaseDate, song.Text, song.Link, id).Scan(
-		&updatedSong.ID,
-		&updatedSong.Group,
-		&updatedSong.Songname,
-		&updatedSong.ReleaseDate,
-		&updatedSong.Text,
-		&updatedSong.Link,
-	)
+    var updatedSong models.Song
+    err = db.Conn.QueryRow(ctx, query,
+        groupID,
+        song.Songname,
+        song.ReleaseDate,
+        song.Text,
+        song.Link,
+        id,
+    ).Scan(
+        &updatedSong.ID,
+        &updatedSong.Group,
+        &updatedSong.Songname,
+        &updatedSong.ReleaseDate,
+        &updatedSong.Text,
+        &updatedSong.Link,
+    )
 
 	if err != nil {
 		if stdErrors.Is(err, pgx.ErrNoRows) {

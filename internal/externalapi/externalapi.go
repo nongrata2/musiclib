@@ -1,6 +1,7 @@
 package externalapi
 
 import (
+	"time"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,7 +9,7 @@ import (
 )
 
 type APIResponse struct {
-	ReleaseDate string `json:"release_date"`
+	ReleaseDate time.Time `json:"release_date"`
 	Text        string `json:"text"`
 	Link        string `json:"link"`
 }

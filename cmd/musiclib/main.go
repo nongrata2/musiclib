@@ -55,6 +55,9 @@ func main() {
 	mux.Handle("GET /songs", handlers.GetLibDataHandler(log, storage))
 	mux.Handle("GET /songs/{songID}", handlers.GetLyricsHandler(log, storage))
 	mux.Handle("DELETE /songs/{songID}", handlers.DeleteSongHandler(log, storage))
+	// TO DO
+	// mux.Handle("PUT /groups", handlers.AddGroupHandler(log, storage)) // add new group
+	// mux.Handle("PUT /groups", handlers.GetGroupsDataHandler(log, storage)) // get info about groups, group name: num of songs
 
 	server := http.Server{
 		Addr:        cfg.HttpServerAddress,
