@@ -13,10 +13,10 @@ type Config struct {
 	HttpServerTimeout time.Duration `env:"HTTP_SERVER_TIMEOUT" env-default:"5s"`
 	LogLevel          string        `env:"LOG_LEVEL" env-default:"DEBUG"`
 	DBHost            string        `env:"DB_HOST" env-default:"db"`
-	DBUser            string        `env:"DB_USER" env-default:"postgres"`
-	DBPassword        string        `env:"DB_PASSWORD" env-default:"postgres"`
-	DBName            string        `env:"DB_NAME" env-default:"postgres"`
-	DBPort            string        `env:"DB_PORT" env-default:"5432"`
+	DBUser            string        `env:"POSTGRES_USER" env-default:"postgres"`
+	DBPassword        string        `env:"POSTGRES_PASSWORD" env-default:"postgres"`
+	DBName            string        `env:"POSTGRES_NAME" env-default:"postgres"`
+	DBPort            string        `env:"POSTGRES_PORT" env-default:"5432"`
 	ExternalAPIURL    string        `env:"EXTERNAL_APIURL" env-default:"http://172.17.0.1:8082"`
 }
 

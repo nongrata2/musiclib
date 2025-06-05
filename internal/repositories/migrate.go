@@ -10,25 +10,25 @@ import (
 )
 
 func (db *DB) Migrate() error {
-	db.Log.Debug("running migration")
-    files, err := iofs.New(migrations.MigrationFiles, ".")
-    if err != nil {
-        db.Log.Error("failed to load migration files", "error", err)
-        return err
-    }
-    db.Log.Debug("migration files loaded successfully")
-	
-	sqlDB := stdlib.OpenDBFromPool(db.Conn)
+	db.log.Debug("running migration")
+	files, err := iofs.New(migrations.MigrationFiles, ".")
+	if err != nil {
+		db.log.Error("failed to load migration files", "error", err)
+		return err
+	}
+	db.log.Debug("migration files loaded successfully")
+
+	sqlDB := stdlib.OpenDBFromPool(db.conn)
 	defer sqlDB.Close()
 
 	driver, err := pgx.WithInstance(sqlDB, &pgx.Config{})
 	if err != nil {
-		db.Log.Error("failed to create pgx driver for migrations", "error", err)
+		db.log.Error("failed to create pgx driver for migrations", "error", err)
 		return err
 	}
 	m, err := migrate.NewWithInstance("iofs", files, "pgx", driver)
 	if err != nil {
-		db.Log.Error("failed to initialize migrations", "error", err)
+		db.log.Error("failed to initialize migrations", "error", err)
 		return err
 	}
 
@@ -36,12 +36,12 @@ func (db *DB) Migrate() error {
 
 	if err != nil {
 		if err != migrate.ErrNoChange {
-			db.Log.Error("migration failed", "error", err)
+			db.log.Error("migration failed", "error", err)
 			return err
 		}
-		db.Log.Debug("migration did not change anything")
+		db.log.Debug("migration did not change anything")
 	}
 
-	db.Log.Debug("migration finished")
+	db.log.Debug("migration finished")
 	return nil
 }

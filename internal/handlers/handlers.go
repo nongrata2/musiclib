@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -10,11 +11,18 @@ import (
 
 	"github.com/nongrata2/musiclib/internal/externalapi"
 	"github.com/nongrata2/musiclib/internal/models"
-	"github.com/nongrata2/musiclib/internal/repositories"
 	"github.com/nongrata2/musiclib/pkg/errors"
 )
 
-func AddSongHandler(log *slog.Logger, db repositories.DBInterface, apiBaseURL string) http.HandlerFunc {
+type DBInterface interface {
+	Add(ctx context.Context, song models.Song) error
+	GetSongs(ctx context.Context, filters models.SongFilter, page, limit int) ([]models.Song, error)
+	Delete(ctx context.Context, songID string) error
+	GetLyrics(ctx context.Context, songID string, page, limit int) (string, error)
+	Update(ctx context.Context, id int, song models.Song) (*models.Song, error)
+}
+
+func AddSongHandler(log *slog.Logger, db DBInterface, apiBaseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("adding song handler")
 		log.Info("start adding song")
@@ -60,29 +68,29 @@ func AddSongHandler(log *slog.Logger, db repositories.DBInterface, apiBaseURL st
 	}
 }
 
-func GetLibDataHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
+func GetLibDataHandler(log *slog.Logger, db DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("getting library data handler")
 		log.Info("start getting data from library")
 
 		filters := models.SongFilter{
-			Group:       r.URL.Query().Get("group_name"),
-			Songname:    r.URL.Query().Get("song_name"),
-			Text:        r.URL.Query().Get("text"),
-			Link:        r.URL.Query().Get("link"),
+			Group:    r.URL.Query().Get("group_name"),
+			Songname: r.URL.Query().Get("song_name"),
+			Text:     r.URL.Query().Get("text"),
+			Link:     r.URL.Query().Get("link"),
 		}
 
-        releaseDateStr := r.URL.Query().Get("release_date")
-        if releaseDateStr != "" {
-            var err error
-            releaseDate, err := time.Parse("2006-01-02", releaseDateStr)
-            if err != nil {
-                log.Error("failed to parse release date", "error", err)
-                http.Error(w, "Invalid release_date format. Expected YYYY-MM-DD", http.StatusBadRequest)
-                return
-            }
+		releaseDateStr := r.URL.Query().Get("release_date")
+		if releaseDateStr != "" {
+			var err error
+			releaseDate, err := time.Parse("2006-01-02", releaseDateStr)
+			if err != nil {
+				log.Error("failed to parse release date", "error", err)
+				http.Error(w, "Invalid release_date format. Expected YYYY-MM-DD", http.StatusBadRequest)
+				return
+			}
 			filters.ReleaseDate = releaseDate
-        }
+		}
 
 		pagestr := r.URL.Query().Get("page")
 		limitstr := r.URL.Query().Get("limit")
@@ -148,7 +156,7 @@ func GetLibDataHandler(log *slog.Logger, db repositories.DBInterface) http.Handl
 	}
 }
 
-func DeleteSongHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
+func DeleteSongHandler(log *slog.Logger, db DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("deleting song handler")
 		log.Info("start deleting song")
@@ -171,7 +179,7 @@ func DeleteSongHandler(log *slog.Logger, db repositories.DBInterface) http.Handl
 	}
 }
 
-func GetLyricsHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
+func GetLyricsHandler(log *slog.Logger, db DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("getting lyrics handler")
 		log.Info("start getting lyrics")
@@ -231,7 +239,7 @@ func GetLyricsHandler(log *slog.Logger, db repositories.DBInterface) http.Handle
 	}
 }
 
-func EditSongHandler(log *slog.Logger, db repositories.DBInterface) http.HandlerFunc {
+func EditSongHandler(log *slog.Logger, db DBInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Debug("editing song handler")
 		log.Info("start editing song")
